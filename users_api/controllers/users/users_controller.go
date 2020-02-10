@@ -6,9 +6,7 @@ import (
 
 	"github.com/bookstore_app/users_api/domain/users"
 	"github.com/bookstore_app/users_api/services"
-	"github.com/bookstore_app/users_api/utils/errors"
-
-	"fmt"
+	"github.com/bookstore_app/users_api/utils/rest_errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +17,7 @@ func GetUser(c *gin.Context) {
 
 	if userErr != nil {
 		// param not valid
-		err := errors.HandleBadRequestErr("invalid User id in URL.")
+		err := rest_errors.HandleBadRequestErr("invalid User id in URL.")
 		c.JSON(err.Status, err)
 		return
 	}
@@ -36,9 +34,8 @@ func GetUser(c *gin.Context) {
 }
 func CreateUser(c *gin.Context) {
 	var user users.User
-	fmt.Println(user)
 	if err := c.ShouldBindJSON(&user); err != nil {
-		restErr := errors.HandleBadRequestErr("invalid JSON body")
+		restErr := rest_errors.HandleBadRequestErr("invalid JSON body")
 		c.JSON(restErr.Status, restErr)
 		return
 	}
@@ -53,13 +50,42 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, result)
 }
 
+func UpdateUser(c *gin.Context) {
+	// check if ID is correct..
+	userId, userErr := strconv.ParseInt(c.Param("user_id"), 10, 64)
+	if userErr != nil {
+		err := rest_errors.HandleBadRequestErr("invalid User id in URL.")
+		c.JSON(err.Status, err)
+		return
+	}
+
+	// check if invalid JSON entered..
+	var user users.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		restErr := rest_errors.HandleBadRequestErr("Invalid JSON Body.")
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+	user.Id = userId
+	// call service.
+	isPartialUpdate := c.Request.Method == http.MethodPatch
+
+	result, updateErr := services.UpdateUser(isPartialUpdate, user)
+
+	// if invalid backend call.. err / else OKAY JSON
+	if updateErr != nil {
+		c.JSON(updateErr.Status, updateErr)
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
 func DeleteUser(c *gin.Context) {
 	// find user id
 	userId, userErr := strconv.ParseInt(c.Param("user_id"), 10, 64)
 
 	// if param is bad.. handle
 	if userErr != nil {
-		err := errors.HandleBadRequestErr("invalid User id in URL.")
+		err := rest_errors.HandleBadRequestErr("invalid User id in URL.")
 		c.JSON(err.Status, err)
 		return
 	}

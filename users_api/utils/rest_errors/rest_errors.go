@@ -1,4 +1,4 @@
-package errors
+package rest_errors
 
 import "net/http"
 
@@ -22,4 +22,13 @@ func HandleNotFound(message string) *RestErr {
 		Status:  http.StatusNotFound,
 		Error:   "not_found",
 	}
+}
+
+func HandleInternalServerErr(message string) *RestErr {
+	return &RestErr{
+		Message: message,
+		Status:  http.StatusInternalServerError,
+		Error:   "internal_server_error",
+	}
+
 }
